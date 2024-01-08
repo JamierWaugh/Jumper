@@ -1,0 +1,265 @@
+import pygame
+import math
+import time
+
+# Initialize Pygame
+pygame.init()
+
+# Set up the game window
+window_width = 800
+window_height = 600
+window = pygame.display.set_mode((window_width, window_height))
+pygame.display.set_caption("Mario Platformer")
+
+# Set up colors
+WHITE = (255, 255, 255)
+
+# Set up the player
+player_width = 40
+player_height = 60
+player_x = 100
+player_y = window_height - player_height - 50
+player_speed = 2
+player_jump = False
+player_jump_height = 10
+player_y_velocity = 0
+gravity = 0.5
+player_direction = "null"
+currentStage = 0
+
+# Set up the obstacles
+obstaclesStage1 = [
+    {"x": 300, "y": window_height - 20 - 80},
+    {"x": 500, "y": window_height - 20 - 100},
+    {"x": 700, "y": window_height - 20 - 150},
+    {"x": 300, "y": window_height - 20 - 300},
+    {"x":100,"y": window_height - 20 - 450}
+    # Add more obstacles here
+]
+
+obstaclesStage2 = [
+    {"x":400, "y": window_height - 20}
+    ]
+
+floor = [ {"x": 0, "y":600}]
+floor_width= 800
+floor_height = 10
+
+wall = [ {"x": 0, "y": 0 },
+         {"x": 790, "y": 0}
+         ]
+wall_width = 10
+wall_height = 600
+
+obstacle_width = 80
+obstacle_height = 20
+momentumDecayRate = 0.01
+maxVelocity = -15
+
+
+    
+
+# Set up the game clock
+clock = pygame.time.Clock()
+
+# Game loop
+running = True
+
+while running:
+    
+    # Handle events
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+        # Jump when space bar is pressed
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE and player_direction =="null":
+                player_direction = "vert"
+                player_y_velocity = -1
+                momentumRight = 0
+                while player_jump == False:
+                    for event in pygame.event.get():
+                        if event.type == pygame.KEYUP:
+                            player_jump = True
+                            player_speed = 7
+                            st = time.time()
+                    player_y_velocity -= 0.0000065
+                if player_y_velocity < maxVelocity:
+                    player_y_velocity = maxVelocity
+            if event.key == pygame.K_d and player_direction == "null":
+                player_direction = "right"
+                player_y_velocity = -1
+                momentumRight = 0
+                while player_jump == False:
+                    for event in pygame.event.get():
+                        if event.type == pygame.KEYUP:
+                            player_jump = True
+                            player_speed = 7
+                            st = time.time()
+                    player_y_velocity -= 0.0000065
+                if player_y_velocity < maxVelocity:
+                    player_y_velocity = maxVelocity
+            if event.key == pygame.K_a and player_direction == "null":
+                player_direction = "left"
+                player_y_velocity = -1
+                momentumRight = 0
+                while player_jump == False:
+                    for event in pygame.event.get():
+                        if event.type == pygame.KEYUP:
+                            player_jump = True
+                            player_speed = 7
+                            st = time.time()
+                    player_y_velocity -= 0.0000065
+                if player_y_velocity < maxVelocity:
+                    player_y_velocity = maxVelocity
+                    
+
+    # Move the player
+    #player_x_velocity += momentumRight ** te
+    keys = pygame.key.get_pressed()
+    
+    if player_jump == False:
+        player_speed = 2
+    #if player_jump == True:
+        #player_speed = 7
+    if keys[pygame.K_LEFT] and player_jump == False:
+        player_x -= player_speed
+        player_direction = "left"
+    if keys[pygame.K_RIGHT] and player_jump == False:
+        player_x += player_speed
+        player_direction = "right"
+    if player_direction == "right" and player_jump == True:
+        et = time.time()
+        timeElapsed = (et - st)
+        player_speed = player_speed * ((1-  momentumDecayRate)** timeElapsed)
+        player_x += (player_speed)
+        print(player_speed, "speed")
+    if player_direction == "left" and player_jump == True:
+        et = time.time()
+        timeElapsed = (et - st)
+        player_speed = player_speed * ((1-  momentumDecayRate)** timeElapsed)
+        player_x -= (player_speed)
+        print(player_speed, "speed")
+
+    # Apply gravity
+    player_y_velocity += gravity
+    player_y += player_y_velocity
+
+
+    # Collision detection with the obstacles
+    if player_y + player_height < 0 and currentStage == 0 or currentStage == 1: # if entering stage 1
+        if currentStage == 0:
+            player_y = window_height - player_height - 1
+            print("made it")
+        currentStage = 1
+        
+        #player_y = window_height - player_height - 1
+        for obstacle in obstaclesStage2:
+            if player_x < obstacle["x"] + obstacle_width and player_x + player_width > obstacle["x"] and player_y + player_height > obstacle["y"] and player_y <= obstacle["y"] + obstacle_height and not player_y + player_height < obstacle["y"] + obstacle_height:
+                # Check if the player is moving upward (jumping)
+                if player_y < obstacle["y"] + obstacle_height:
+                    # Player is colliding with the obstacle from below, stop their upward motion
+                    player_y_velocity = 0
+                    #player_y = obstacle["y"] +obstacle_height
+                    if player_x  < obstacle["x"]: # bouncing player sprite off of obstacle edge if collided with
+                        player_direction = "left"
+                        player_speed = player_speed / 1.5
+                    elif player_x + player_width > (obstacle["x"] + obstacle_width):
+                        player_direction = "right"
+                        player_speed = player_speed / 1.5
+
+                    print("under")
+            elif player_x < obstacle["x"] + obstacle_width and player_x + player_width > obstacle["x"] and player_y + player_height  > obstacle["y"] and player_y  < obstacle["y"] + obstacle_height : # final pass not working
+                player_y = obstacle["y"] - player_height
+                player_jump = False
+                momentumDecayRate = 0.01
+                player_direction = "null"
+                player_y_velocity = 0
+        for i in wall:
+            if player_x < i["x"] + wall_width and player_x + player_width > i["x"] and player_y + player_height > i["y"]:
+                if i["x"] == 0: # spawning player a few pixels from the wall if they make contact
+                    player_x = i["x"] + 10
+                    player_direction = "right"
+                    player_speed = player_speed / 2
+                    print(player_speed)
+                else:
+                    player_x = i["x"] - 40
+                    player_direction = "left"
+                    player_speed = player_speed / 2
+                
+                #player_jump = False
+                #player_direction = "null"
+                player_y_velocity = 0
+        window.fill(WHITE)
+        pygame.draw.rect(window, (255, 0, 0), (player_x, player_y, player_width, player_height))
+        for obstacle in obstaclesStage2:
+            pygame.draw.rect(window, (0, 0, 255), (obstacle["x"], obstacle["y"], obstacle_width, obstacle_height))
+        for i in floor:
+            pygame.draw.rect(window, (0,0,255), (i["x"], i["y"],floor_width, floor_height))
+        for i in wall:
+            pygame.draw.rect(window, (0,0,255), (i["x"], i["y"],wall_width, wall_height))
+        pygame.display.update()
+    if (player_y + player_height > 0 and currentStage == 0) or ( currentStage == 1 and player_y > window_height):  
+        if currentStage == 1:
+            player_y = 0
+        currentStage = 0 
+        for obstacle in obstaclesStage1:
+            if player_x < obstacle["x"] + obstacle_width and player_x + player_width > obstacle["x"] and player_y + player_height > obstacle["y"] and player_y <= obstacle["y"] + obstacle_height and not player_y + player_height < obstacle["y"] + obstacle_height:
+                # Check if the player is moving upward (jumping)
+                if player_y < obstacle["y"] + obstacle_height:
+                    # Player is colliding with the obstacle from below, stop their upward motion
+                    player_y_velocity = 0
+                    #player_y = obstacle["y"] +obstacle_height
+                    if player_x  < obstacle["x"]: # bouncing player sprite off of obstacle edge if collided with
+                        player_direction = "left"
+                        player_speed = player_speed / 1.5
+                    elif player_x + player_width > (obstacle["x"] + obstacle_width):
+                        player_direction = "right"
+                        player_speed = player_speed / 1.5
+
+                    print("under")
+            elif player_x < obstacle["x"] + obstacle_width and player_x + player_width > obstacle["x"] and player_y + player_height  > obstacle["y"] and player_y  < obstacle["y"] + obstacle_height : # final pass not working
+                player_y = obstacle["y"] - player_height
+                player_jump = False
+                momentumDecayRate = 0.01
+                player_direction = "null"
+                player_y_velocity = 0
+        for i in floor:
+            if player_x < i["x"] + floor_width and player_x + player_width > i["x"] and player_y + player_height > i["y"]:
+                player_y = i["y"] - player_height
+                player_jump = False
+                player_direction = "null"
+                player_y_velocity = 0
+        for i in wall:
+            if player_x < i["x"] + wall_width and player_x + player_width > i["x"] and player_y + player_height > i["y"]:
+                if i["x"] == 0: # spawning player a few pixels from the wall if they make contact
+                    player_x = i["x"] + 10
+                    player_direction = "right"
+                    player_speed = player_speed / 2
+                    print(player_speed)
+                else:
+                    player_x = i["x"] - 40
+                    player_direction = "left"
+                    player_speed = player_speed / 2
+                
+                #player_jump = False
+                #player_direction = "null"
+                player_y_velocity = 0
+
+        # Update the game window
+        window.fill(WHITE)
+        pygame.draw.rect(window, (207,107,169), (player_x, player_y, player_width, player_height))
+        for obstacle in obstaclesStage1:
+            pygame.draw.rect(window, (0, 0, 255), (obstacle["x"], obstacle["y"], obstacle_width, obstacle_height))
+        for i in floor:
+            pygame.draw.rect(window, (0,0,255), (i["x"], i["y"],floor_width, floor_height))
+        for i in wall:
+            pygame.draw.rect(window, (0,0,255), (i["x"], i["y"],wall_width, wall_height))
+        pygame.display.update()
+
+    # Set the frames per second
+    clock.tick(60)
+
+# Quit the game
+pygame.quit()
